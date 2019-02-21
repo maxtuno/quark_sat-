@@ -1,0 +1,5 @@
+c Reading cnf
+c Reading proof
+c Done
+c Verifying sat
+s VERIFIED SAT
