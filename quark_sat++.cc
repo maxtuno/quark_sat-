@@ -61,8 +61,7 @@ unsigned long to_index(const long &literal) {
     return static_cast<unsigned long>(std::abs(literal) - 1);
 }
 
-unsigned long count_conflicts(frm &formula, vrs &variables, unsigned long &undefined, bool boolean = true) {
-    unsigned long conflicts{0};
+bool exist_conflict(frm &formula, vrs &variables, unsigned long &undefined) {
     for (const auto &clause : formula) {
         unsigned long counter{0};
         for (const auto &literal : clause) {
@@ -73,22 +72,16 @@ unsigned long count_conflicts(frm &formula, vrs &variables, unsigned long &undef
             }
         }
         if (counter == clause.size()) {
-            if (boolean) {
-                return 1;
-            }
-            conflicts++;
+            return true;
         }
     }
-    if (boolean) {
-        return 0;
-    }
-    return conflicts;
+    return false;
 }
 
 bool run(frm &formula, vrs &variables, vrs &back_space, unsigned long &undefined) {
     unsigned long counter = 0;
     for (;;) {
-        if (count_conflicts(formula, variables, undefined) != 0) {
+        if (exist_conflict(formula, variables, undefined)) {
             if (!backtrack(variables, back_space, undefined)) {
                 return false;
             }
