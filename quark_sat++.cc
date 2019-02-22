@@ -19,26 +19,21 @@ SOFTWARE.
 
 #include <fstream>
 #include <iostream>
-#include <set>
 #include <sstream>
 #include <vector>
+#include <set>
 
-enum TERNARY { FALSE, TRUE, UNDEFINED };
 
 typedef std::set<std::set<long>> frm;
-typedef std::vector<TERNARY> vrs;
+typedef std::vector<long> vrs;
 
-TERNARY operator!(TERNARY variables) {
-    if (variables == TERNARY::UNDEFINED) {
-        return variables;
-    }
-    return variables == TERNARY::TRUE ? TERNARY::FALSE : TERNARY::TRUE;
-}
 
 void decide(vrs &variables, unsigned long &undefined) {
+    long index{0};
     for (auto &&variable : variables) {
-        if (variable == TERNARY::UNDEFINED) {
-            variable = TERNARY::FALSE;
+        index++;
+        if (variable == 0) {
+            variable = -index;
             undefined++;
             break;
         }
@@ -47,14 +42,14 @@ void decide(vrs &variables, unsigned long &undefined) {
 
 bool backtrack(vrs &variables, vrs &back_space, unsigned long &undefined) {
     for (unsigned long index{0}; index < variables.size(); index++) {
-        if (variables[index] != TERNARY::UNDEFINED) {
+        if (variables[index] != 0) {
             if (variables[index] == back_space[index]) {
-                back_space[index] = TERNARY::UNDEFINED;
-                variables[index] = TERNARY::UNDEFINED;
+                back_space[index] = 0;
+                variables[index] = 0;
                 undefined--;
             } else {
-                back_space[index] = !variables[index];
-                variables[index] = !variables[index];
+                back_space[index] = -variables[index];
+                variables[index] = -variables[index];
                 return true;
             }
         }
@@ -62,29 +57,38 @@ bool backtrack(vrs &variables, vrs &back_space, unsigned long &undefined) {
     return false;
 }
 
-unsigned long to_index(const long &literal) { return static_cast<unsigned long>(std::abs(literal) - 1); }
+unsigned long to_index(const long &literal) {
+    return static_cast<unsigned long>(std::abs(literal) - 1);
+}
 
-long to_literal(const unsigned long &index, const vrs &variables) { return variables[index] == TRUE ? +(index + 1) : -(index + 1); }
-
-bool exist_conflict(frm &formula, vrs &variables, unsigned long &undefined) {
+unsigned long count_conflicts(frm &formula, vrs &variables, unsigned long &undefined, bool boolean = true) {
+    unsigned long conflicts{0};
     for (const auto &clause : formula) {
         unsigned long counter{0};
         for (const auto &literal : clause) {
-            if (variables[to_index(literal)] != TERNARY::UNDEFINED) {
-                counter += literal == -to_literal(to_index(literal), variables);
+            if (variables[to_index(literal)] != 0) {
+                counter += literal == -variables[to_index(literal)];
+            } else {
+                break;
             }
         }
         if (counter == clause.size()) {
-            return true;
+            if (boolean) {
+                return 1;
+            }
+            conflicts++;
         }
     }
-    return false;
+    if (boolean) {
+        return 0;
+    }
+    return conflicts;
 }
 
 bool run(frm &formula, vrs &variables, vrs &back_space, unsigned long &undefined) {
-    unsigned long counter{0};
+    unsigned long counter = 0;
     for (;;) {
-        if (exist_conflict(formula, variables, undefined)) {
+        if (count_conflicts(formula, variables, undefined) != 0) {
             if (!backtrack(variables, back_space, undefined)) {
                 return false;
             }
@@ -120,8 +124,8 @@ int main(int, char *argv[]) {
             if (buffer == "cnf") {
                 ss >> n;
                 ss >> m;
-                variables.resize(n, TERNARY::UNDEFINED);
-                back_space.resize(n, TERNARY::UNDEFINED);
+                variables.resize(n, 0);
+                back_space.resize(n, 0);
                 break;
             }
             if (buffer != "0" && buffer != "p" && buffer != "cnf" && buffer != "%") {
@@ -135,8 +139,8 @@ int main(int, char *argv[]) {
 
     if (run(formula, variables, back_space, undefined)) {
         std::cout << "SAT" << std::endl;
-        for (auto i{0}; i < variables.size(); i++) {
-            std::cout << (variables[i] ? (i + 1) : -(i + 1)) << (i < variables.size() - 1 ? " " : "");
+        for (auto i = 0; i < variables.size(); i++) {
+            std::cout << variables[i] << (i < variables.size() - 1 ? " " : "");
         }
         std::cout << " 0" << std::endl;
     } else {
