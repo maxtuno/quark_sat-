@@ -125,7 +125,8 @@ int main(int, char *argv[]) {
             formula.insert(cls);
         }
     }
-
+    cnf_file.close();
+    
     if (run(formula, variables, back_space, assigned)) {
         std::cout << "SAT" << std::endl;
         for (auto i = 0; i < variables.size(); i++) {
